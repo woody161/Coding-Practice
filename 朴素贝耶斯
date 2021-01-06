@@ -1,0 +1,85 @@
+# 导入包
+import numpy as np
+import pandas as pd
+from sklearn.naive_bayes import GaussianNB
+import matplotlib.pyplot as plt
+# 导入csv数据（市值）
+ps=pd.read_csv('ps_ratio.csv',index_col=0,parse_dates=True)
+pe=pd.read_csv('pe.csv',index_col=0,parse_dates=True)
+pcf=pd.read_csv('pcf.csv',index_col=0,parse_dates=True)
+pb=pd.read_csv('pb.csv',index_col=0,parse_dates=True)
+# 导入csv数据（分类标签）
+label1=pd.read_csv('label1.csv',index_col=0,parse_dates=True)
+label2=pd.read_csv('label2.csv',index_col=0,parse_dates=True)
+## 将数据整合到两个DataFrame中（训练集和测试集）
+# 训练集
+NB=pd.DataFrame()
+j=0
+for day in label1.index[:2187]:
+    j=j+1
+    print(j)
+    l1=label1.loc[day,:].dropna()
+    index1=l1.index
+    index2=[str(day)+str(i) for i in range(len(l1))]
+    for k in range(len(l1)):
+        NB.loc[index2[k],'X1']=l1[k]
+        NB.loc[index2[k],'X2']=label2.loc[day,index1[k]]
+        NB.loc[index2[k],'pe']=pe2.loc[day,index1[k]]
+        NB.loc[index2[k],'ps']=ps.loc[day,index1[k]]
+        NB.loc[index2[k],'pcf']=pcf2.loc[day,index1[k]]
+        NB.loc[index2[k],'pb']=pb2.loc[day,index1[k]]
+# 测试集
+j=0
+for day in label1.index[-427:]:
+    j=j+1
+    print(j)
+    l1=label1.loc[day,:].dropna()
+    index1=l1.index
+    index2=[str(day)+str(i) for i in range(len(l1))]
+    for k in range(len(l1)):
+        NB2.loc[index2[k],'X1']=l1[k]
+        NB2.loc[index2[k],'X2']=label2.loc[day,index1[k]]
+        NB2.loc[index2[k],'pe']=pe2.loc[day,index1[k]]
+        NB2.loc[index2[k],'ps']=ps.loc[day,index1[k]]
+        NB2.loc[index2[k],'pcf']=pcf2.loc[day,index1[k]]
+        NB2.loc[index2[k],'pb']=pb2.loc[day,index1[k]]
+# 划分训练集和测试集
+X_train=NB[['pe','ps','pcf','pb']]
+X_test=NB2[['pe','ps','pcf','pb']]
+y_train1=NB['X1']
+y_train2=NB['X2']
+y_test1=NB2['X1']
+y_test2=NB2['X2']
+# 训练模型
+clf=GaussianNB()
+clf.fit(X_train,y_train2)
+GaussianNB(priors=None)
+# 结果
+m1=clf.score(X_train,y_train2)
+m2=clf.score(X_test,y_test2)
+# 结果可视化，饼图
+fig,ax=plt.subplots(1,2,figsize=(16,8))
+expl = [0.1,0] 
+# autopct: format of "percent" string;百分数格式
+labels=['Stock predicted correctly','Stock predicted incorrectly']
+m=[m1,1-m1]
+patches1,l_text,p_text=ax[0].pie(m, explode=expl, colors=['sandybrown','skyblue'], autopct='%1.1f%%',pctdistance=0.8, shadow=True)
+for t in p_text:
+    t.set_size(16)
+ax[0].legend(patches1,
+           labels,
+           fontsize=14,
+           loc="lower left",
+           bbox_to_anchor=(0.91, 0, 0.3, 1))
+m=[m2,1-m2]
+patches2,l_text,p_text=ax[1].pie(m, explode=expl, colors=['salmon','palegreen'], autopct='%1.1f%%',pctdistance=0.8, shadow=True)
+for t in p_text:
+    t.set_size(20)
+ax[1].legend(patches2,
+           labels,
+           fontsize=14,
+           loc="lower left",
+           bbox_to_anchor=(0.91, 0, 0.3, 1))
+ax[1].set_title('Accuarcy of Training data',fontsize=25)
+ax[0].set_title('Accuarcy of Test data',fontsize=25)
+plt.show()
