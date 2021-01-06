@@ -1,0 +1,36 @@
+# 导入包
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from statsmodels.tsa.stattools import adfuller
+from statsmodels.tsa.arima_model import ARMA
+from statsmodels.tsa.statespace.sarimax import SARIMAX
+import warnings
+warnings.filterwarnings("ignore")
+# 读入收盘价
+cl=pd.read_csv('收盘价.csv',index_col=0,parse_dates=True)
+cl.head()
+stocks=cl.columns
+date=cl.index
+year=['2010','2011','2012','2013','2014','2015','2016','2017','2018','2019','2020']
+# 筛选出每年至少有50个活跃交易日的股票
+stockless=[]
+j=-1
+for stock in stocks:
+    n=[]
+    j=j+1
+    print(j)
+    for i in range(len(year)):
+        ts=list(cl.loc[year[i],stock].dropna())
+        n.append(len(ts))
+    n=np.array(n)
+    less=n[n<=50]
+    if len(less)>=1:
+        stockless.append(stock)
+# 存储筛选过的股票到csv文件中
+cl2=cl.drop(stockless,axis=1)
+cl2.to_csv('收盘价.csv')
+cl2.head()
+# 新的股票代码，一共有1857支符合要求的股票
+stock2=cl2.columns
+print(len(stock2))
