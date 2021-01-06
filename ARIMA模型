@@ -34,3 +34,31 @@ cl2.head()
 # 新的股票代码，一共有1857支符合要求的股票
 stock2=cl2.columns
 print(len(stock2))
+## 拟合ARIMA模型的函数
+# 输入时序，p值，q值
+# 输出模型的估计值，95%置信区间的上下限
+def fore(ts,p,q):
+    model=SARIMAX(ts,order=(p,1,q))
+    results = model.fit()
+    forecast = results.get_prediction(start=-len(ts))
+    m_f=list(forecast.predicted_mean[1:])
+    ci=forecast.conf_int()
+    lc=list(ci.T[0])[1:]
+    hc=list(ci.T[1])[1:]
+    return [m_f,lc,hc]
+df_arma=pd.DataFrame(index=cl2.index)
+lower_ci=pd.DataFrame(index=cl2.index)
+upper_ci=pd.DataFrame(index=cl2.index)
+# 对所有筛选出的股票作ARIMA模型拟合
+j=0
+for stock in stock2:
+    j=j+1
+    print(j)
+    ts=list(cl2[stock].dropna())
+    m_f=fore(ts,2,2)[0]
+    lc=fore(ts,2,2)[1]
+    hc=fore(ts,2,2)[2]
+    loca=cl2.index[cl2[stock]>0]
+    df_arma.loc[loca,stock]=[0]+m_f
+    lower_ci.loc[loca,stock]=[0]+lc
+    upper_ci.loc[loca,stock]=[0]+hc
