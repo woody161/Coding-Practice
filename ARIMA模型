@@ -62,3 +62,68 @@ for stock in stock2:
     df_arma.loc[loca,stock]=[0]+m_f
     lower_ci.loc[loca,stock]=[0]+lc
     upper_ci.loc[loca,stock]=[0]+hc
+## ARIMA模型准确性检查
+# 导入真实值
+dr=pd.read_csv('日涨跌幅.csv',index_col=0,parse_dates=True)
+dr.head()
+# 预测的涨跌幅
+dar=(100*df_arma.diff()/df_arma.shift(1)).shift(-1)
+dar.head()
+## 准确性的DataFrame
+# ac,pac,fn,fp=准确率，阳性（上涨）准确率，假阴性，假阳性；m1,m2=以是否大于0为分界，以是否大于5为分界
+acc=pd.DataFrame(index=date[2:],columns=['acm1','pacm1','fnm1','fpm1','acm2','pacm2','fnm2','fpm2'])
+# m1
+i=0
+for day in date[2:]:
+    i=i+1
+    print(i)
+    n=cl.columns[(dar.loc[day]<=0)&(dr.loc[day]<=0)]
+    p=cl.columns[(dar.loc[day]>0)&(dr.loc[day]>0)]
+    p2=cl.columns[dr.loc[day]>0]
+    acc.loc[day,'acm1']=100*(len(n)+len(p))/dr.loc[day].count()
+    acc.loc[day,'pacm1']=100*len(p)/len(p2)
+    fn=cl.columns[(dar.loc[day]<=0)&(dr.loc[day]>0)]
+    fp=cl.columns[(dar.loc[day]>0)&(dr.loc[day]<=0)]
+    acc.loc[day,'fnm1']=len(fn)
+    acc.loc[day,'fpm1']=len(fp)
+# m2
+i=0
+for day in date[2:]:
+    i=i+1
+    print(i)
+    n=cl.columns[(dar.loc[day]<5)&(dr.loc[day]<5)]
+    p=cl.columns[(dar.loc[day]>=5)&(dr.loc[day]>=5)]
+    p2=cl.columns[dr.loc[day]>=5]
+    acc.loc[day,'acm2']=100*(len(n)+len(p))/dr.loc[day].count()
+    acc.loc[day,'pacm2']=100*len(p)/len(p2)
+    fn=cl.columns[(dar.loc[day]<5)&(dr.loc[day]>=5)]
+    fp=cl.columns[(dar.loc[day]>=5)&(dr.loc[day]<5)]
+    acc.loc[day,'fnm2']=len(fn)
+    acc.loc[day,'fpm2']=len(fp)
+# 可视化，饼图
+fig,ax=plt.subplots(1,2,figsize=(16,8))
+expl = [0,0.1]   
+# autopct: format of "percent" string;百分数格式
+labels=['Stock predicted correctly','Stock predicted incorrectly']
+label2=['Stock predicted correctly as Postive','False Postive']
+m=[acc2['acm2'].mean(),100-acc2['acm2'].mean()]
+patches1,l_text,p_text=ax[0].pie(m, explode=expl, colors=['sandybrown','skyblue'], autopct='%1.1f%%',pctdistance=0.8, shadow=True)
+for t in p_text:
+    t.set_size(16)
+ax[0].legend(patches1,
+           labels,
+           fontsize=14,
+           loc="bottom left",
+           bbox_to_anchor=(0.91, 0, 0.3, 1))
+m=[acc2['pacm2'].mean(),100-acc2['pacm2'].mean()]
+patches2,l_text,p_text=ax[1].pie(m, explode=expl, colors=['salmon','palegreen'], autopct='%1.1f%%',pctdistance=0.8, shadow=True)
+for t in p_text:
+    t.set_size(20)
+ax[1].legend(patches2,
+           label2,
+           fontsize=14,
+           loc="bottom left",
+           bbox_to_anchor=(0.91, 0, 0.3, 1))
+ax[1].set_title('Overall Postive Accuarcy',fontsize=25)
+ax[0].set_title('Overall Accuarcy',fontsize=25)
+plt.show()
